@@ -1,0 +1,10 @@
+﻿{
+  "Name": "MonsterMod",
+  "Author": "tiko",
+  "Version": "1.0.0",
+  "Description": "add a new monster to the mines",
+  "UniqueID": "tiko.MonsterMod",
+  "EntryDll": "MonsterMod.dll",
+  "MinimumApiVersion": "3.0.0",
+  "UpdateKeys": []
+}
