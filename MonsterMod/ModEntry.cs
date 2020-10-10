@@ -1,19 +1,28 @@
 ﻿using System;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Monsters;
 using StardewValley.Locations;
+using StardewValley.Tools;
+
+
 
 namespace MonsterMod
 {
     /// <summary>The mod entry point.</summary>
+    /// 
     public class ModEntry : Mod, IAssetLoader
     {
         Monster monster = null;
         int chestPop = 1;
+        int stamina = 50;
+        int maxStamina = 50;
+
+        private Texture2D staminaBar;
 
         /*********
         ** Public methods
@@ -25,8 +34,11 @@ namespace MonsterMod
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
             helper.Events.Player.Warped += this.PlayerWarped;
             helper.Events.GameLoop.OneSecondUpdateTicked += this.SecondUpdate;
-            //helper.Events.GameLoop.SaveLoaded += this.OnSaveLoaded;
 
+            this.staminaBar = (Texture2D)helper.Content.Load<Texture2D>("assets/hungerbar.png", (ContentSource)1);
+            helper.Events.Display.RenderedHud += this.RenderStaminaBar;
+
+            //helper.Events.GameLoop.SaveLoaded += this.OnSaveLoaded;
             //Game1.player.chestConsumedMineLevels[10] = false;
 
         }
@@ -49,6 +61,40 @@ namespace MonsterMod
         /*********
         ** Private methods
         *********/
+
+        private void RenderStaminaBar(object sender, RenderedHudEventArgs e)
+        {
+            if (!Context.IsWorldReady || Game1.activeClickableMenu != null || Game1.eventUp)
+                return;
+
+            Vector2 barPosition = new Vector2(4, 5);
+            String toDisplay;
+            toDisplay = "Stamina: " + stamina;
+            Utility.drawTextWithShadow(e.SpriteBatch, toDisplay, Game1.dialogueFont, barPosition, Color.Blue);
+
+            SpriteBatch spriteBatch = e.SpriteBatch;
+            Vector2 position = new Vector2(1350, 575);
+            spriteBatch.Draw(this.staminaBar, position, new Rectangle?(new Rectangle(0, 0, this.staminaBar.Width, this.staminaBar.Height)), 
+                Color.White, 0.0f, new Vector2(), 4f, SpriteEffects.None, 1f);
+            Rectangle destinationRectangle = new Rectangle(3, 13, 6, 41);
+
+            // Need to make configurable stamina settings as done in hunger mod, for now hardcode
+            //float num1 = (float)Game1.player.GetFullness() / (float)Game1.player.GetMaxFullness();
+
+            float num1 = (float)this.stamina / (float)this.maxStamina;
+            //float num1 = (float)0.5;
+            int num2 = (int)((double)destinationRectangle.Height * (double)num1);
+            destinationRectangle.Y += destinationRectangle.Height - num2;
+            destinationRectangle.Height = num2;
+            destinationRectangle.X *= 4;
+            destinationRectangle.Y *= 4;
+            destinationRectangle.Width *= 4;
+            destinationRectangle.Height *= 4;
+            destinationRectangle.X += (int)position.X;
+            destinationRectangle.Y += (int)position.Y;
+            spriteBatch.Draw(Game1.staminaRect, destinationRectangle, new Rectangle?(new Rectangle(0, 0, 1, 1)), Color.Orange);
+        }
+
         /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
@@ -57,7 +103,29 @@ namespace MonsterMod
             // ignore if player hasn't loaded a save yet
             if (!Context.IsWorldReady)
                 return;
+            if (e.Button == SButton.LeftAlt)
+            {
+                string bannerNot = "Left Alt is being pressed.";
+                Game1.addHUDMessage(new HUDMessage(bannerNot, 2));
+              
+            }
 
+            if (e.Button.IsUseToolButton())
+            {
+                Tool tool = Game1.player.CurrentTool;
+                bool isHoldingWeapon = (tool is Axe || tool is MeleeWeapon melee);
+                if (isHoldingWeapon)
+                {
+                    if (stamina >= 10)
+                    {
+                        stamina = stamina - 10;
+                    }
+                    if (stamina < 10)
+                    {
+                        this.Helper.Input.Suppress(e.Button);
+                    }
+                }
+            }
             // print button presses to the console window
             //this.Monitor.Log($"{Game1.player.Name} pressed {e.Button}.", LogLevel.Debug);
         }
@@ -77,6 +145,15 @@ namespace MonsterMod
         {
             int xTile = Game1.player.getTileX();
             int yTile = Game1.player.getTileY();
+
+            if (stamina <= 48)
+            {
+                stamina += 2;
+            }
+            if (stamina == 49)
+            {
+                stamina++;
+            }
 
             Warp w = new Warp(9, 10, "UndergroundMine10", 9, 10, false);
 
@@ -102,7 +179,6 @@ namespace MonsterMod
             else this.Monitor.Log("Alt is not being pressed", LogLevel.Debug);
         }
 
-
         private void PlayerWarped(object sender, WarpedEventArgs e)
         {
             //prints that the character has warped
@@ -112,7 +188,6 @@ namespace MonsterMod
 
             //Game1.player.chestConsumedMineLevels[10] = false;
             //StardewValley.Locations.MineShaft.permanentMineChanges[10].chestsLeft = -1;
-
             //MineShaft.permanentMineChanges[this.mineLevel].chestsLeft > numberSoFar;
 
             if (Game1.player.chestConsumedMineLevels.ContainsKey(10))
@@ -129,22 +204,16 @@ namespace MonsterMod
             }
             else this.Monitor.Log("The key is gone", LogLevel.Debug);
 
-
-
             //bool canAddChest = Game1.player.chestConsumedMineLevels[10];
             //int chestsLeft = StardewValley.Locations.MineShaft.permanentMineChanges[10].chestsLeft;
 
             //this.Monitor.Log($"The chestsLeft Val for mineshaft 10 is {chestsLeft}!", LogLevel.Debug);
             //this.Monitor.Log($"The chest consumed value for mineshaft 10 is {canAddChest}!", LogLevel.Debug);
 
-
-
-
             // String currentLocation = e.NewLocation;
 
             if (e.NewLocation.name == "UndergroundMine10")
             {
-
                 Game1.player.position.X = 19;
                 Game1.player.position.Y = 20;
 
@@ -160,8 +229,6 @@ namespace MonsterMod
                 Monster monster3 = null;
                 monster3 = new GreenSlime(spawnSpot, 0);
                 monster3.DamageToFarmer = 10;
-
-
                 
                 spawnSpot.X = 15;
                 spawnSpot.Y = 10;
@@ -182,11 +249,6 @@ namespace MonsterMod
 
                 //this.Monitor.Log("The player is in level 6 of the mines!", LogLevel.Debug);
             }
-
-            //StardewValley.Monsters.Monster instance = (StardewValley.Monsters.Monster)Activator.CreateInstance(monsterData.Type, constructorArgs);
-            //instance.currentLocation = Game1.currentLocation;
-
-            //MonsterData monsterData = MonsterData.GetMonsterData(monster);
 
             if (e.NewLocation.name == "Farm")
             {
@@ -223,16 +285,12 @@ namespace MonsterMod
                 instance.currentLocation = Game1.currentLocation;
                 */
             }
-
-
-
         }
 
         public Monster AddMonster(string monsterName, Vector2 monsterLocation)
         {
             Monster monster = null;
             
-
             if (monsterName == "GreenSlime")
             {
                 monster = new GreenSlime(monsterLocation, 0);
@@ -244,7 +302,6 @@ namespace MonsterMod
                 return monster;
             }
             else return monster;
-
 
         }
     }
