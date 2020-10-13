@@ -82,7 +82,6 @@ namespace MonsterMod
             //float num1 = (float)Game1.player.GetFullness() / (float)Game1.player.GetMaxFullness();
 
             float num1 = (float)this.stamina / (float)this.maxStamina;
-            //float num1 = (float)0.5;
             int num2 = (int)((double)destinationRectangle.Height * (double)num1);
             destinationRectangle.Y += destinationRectangle.Height - num2;
             destinationRectangle.Height = num2;
@@ -92,7 +91,7 @@ namespace MonsterMod
             destinationRectangle.Height *= 4;
             destinationRectangle.X += (int)position.X;
             destinationRectangle.Y += (int)position.Y;
-            spriteBatch.Draw(Game1.staminaRect, destinationRectangle, new Rectangle?(new Rectangle(0, 0, 1, 1)), Color.Orange);
+            spriteBatch.Draw(Game1.staminaRect, destinationRectangle, new Rectangle?(new Rectangle(0, 0, 1, 1)), Color.DarkSeaGreen);
         }
 
         /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
